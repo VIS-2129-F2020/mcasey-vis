@@ -1,0 +1,326 @@
+---
+title: "Creative 1: Relationships + Distributions"
+author: "Meghan Casey"
+date: September 14, 2020
+output: 
+  html_document:
+    theme: "cosmo" 
+    highlight: "tango"
+---
+
+### Variables of Interest
+
+Milwaukee, WI will be the city I analyze for this assignment.
+
+Unit of Analysis: Census Tract
+
+Population: TBD
+
+1. Total Population of the tract (continuous): tot_pop
+2. Percent of households owned (continuous): per_own
+3. Majority race of the tract (categorical): maj_race
+4. Median age of tract (continuous): med_age
+5. Majority household type of the tract (categorical): maj_hh
+6. Average Household size of the tract (continous): avg_hh
+
+
+### Load Libraries
+```{r Load Libraries, message=FALSE} 
+library(ggplot2)
+library(tidycensus)
+library(tidyverse)
+```
+
+### Get Data
+```{r load area level data}
+area_vars_2010 <- load_variables(2010, "sf1")
+```
+
+### Loading Milwaukee County Tract Level Data from the 2010 Census
+```{r load 2010 Census Data variables, message=FALSE, include=TRUE, results='hide'}
+vars <- c(tot_pop = "P001001",
+          white =   "P008003",
+          black =   "P008004",
+          native =  "P008005",
+          asian =   "P008006",
+          pac_isl = "P008007",
+          other =   "P008008",
+          multi =   "P008010",
+               
+          med_age = "P013001",
+          
+          avg_hh =  "H012001",
+          
+          tot_ten =  "H004001",
+          own_mort = "H004002",
+          own_free = "H004003",
+          rent =     "H004004",
+                
+          tot_hh =    "P018001",
+          family_hh = "P018002",
+          nonfam_hh = "P018007")
+
+mke_tracts <- get_decennial(geography = "tract", variables = vars, 
+                            state = "WI", county = "Milwaukee", 
+                            output = "wide") %>%
+  
+  mutate(per_own = (own_mort + own_free) / tot_ten) %>%
+  
+  mutate(maj_race = case_when(
+    white/tot_pop > 0.5 ~ "white",
+    black/tot_pop > 0.5 ~ "black",
+    native/tot_pop > 0.5 ~ "native",
+    asian/tot_pop > 0.5 ~ "asian",
+    pac_isl/tot_pop > 0.5 ~ "pac_isl",
+    other/tot_pop > 0.5 ~ "other",
+    multi/tot_pop > 0.5 ~ "multi",
+    (white + black + native + asian + asian + pac_isl + other + multi) / tot_pop < 0.5 ~ "other",
+    TRUE ~ "None")) %>%
+  
+  mutate(maj_hh = case_when(
+     family_hh / tot_hh > 0.5 ~ "family",
+    nonfam_hh / tot_hh > 0.5 ~ "nonfamily")) %>%
+  
+  filter(avg_hh > 1.00) %>%
+  
+  select(GEOID, tot_pop, maj_race, maj_hh, med_age, per_own, avg_hh)
+```
+
+### Plotting Data
+
+#### Plot #1
+Average Household Size and Percent of Houses Owned by Majority Household Type
+```{r }
+ggplot(mke_tracts,
+       aes(x = avg_hh,
+           y = per_own,
+           color = maj_hh)) + 
+  geom_point() +
+  scale_x_continuous(name = "Average Household Size within Tract",
+                     breaks = seq(0, 4.5, by = 0.5)) +
+  scale_y_continuous(name = "Percent of Houses Owned within Tract",
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
+  scale_color_discrete(name = "Majority Household Type",
+                       labels = c("Family",
+                                  "Non Family")) +
+  theme_gray()
+```
+
+#### Plot #2
+Average Household Size and Median Age by Majority Race
+```{r}
+ggplot(mke_tracts,
+       aes(x = avg_hh,
+           y = med_age,
+           color = maj_race)) + 
+  geom_point() +
+  stat_smooth(method = "lm") +
+  scale_x_continuous(name = "Average Household Size within Tract",
+                     breaks = seq(0, 4.5, by = 0.5)) +
+  scale_y_continuous(name = "Median Age within Tract",
+                     breaks = seq(18, 58, by = 10)) +
+  scale_color_discrete(name = element_blank(),
+                      labels = c("Black",
+                                 "No Majority",
+                                 "White")) +
+  scale_fill_discrete(name = element_blank(),
+                      labels = c("Black",
+                                 "No Majority",
+                                 "White")) +
+  theme_gray()
+```
+
+
+#### Plot #3
+Percent of Houses Owned and Tract Population
+```{r }
+ggplot(mke_tracts,
+       aes(x = per_own,
+           y = tot_pop)) + 
+  geom_point() +
+  stat_smooth(color = "black") +
+  scale_x_continuous(name = "Percent of Houses Owned within Tract",
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
+  scale_y_continuous(name = "Tract Population",
+                     breaks = seq(1000, 9000, by = 1000)) +
+  theme_classic()
+```
+
+#### Plot #4
+Median Age and Tract Population
+```{r }
+ggplot(mke_tracts, 
+       aes(x = med_age,
+           y = tot_pop)) +
+  geom_point(alpha = 0.5, size = 0.5) +
+  stat_smooth(color = "black", linetype = 2, size = 0.5) +
+  scale_x_continuous(name = "Median Age of Tract",
+                     breaks = seq(18, 58, by = 10),
+                     labels = c("58 or 18", "28", "38", "48", "58")) +
+  scale_y_continuous(name = "Tract population",
+                     trans = "log",
+                     breaks = c(1000, 3000, 5000, 7000, 9000),
+                     labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
+  coord_polar(theta = "x") +
+  theme_bw() 
+```
+
+#### Plot #5
+Majority Race and Tract Population
+```{r }
+ggplot(mke_tracts, 
+       aes(x = maj_race,
+           y = tot_pop)) +
+  geom_point() +
+  scale_x_discrete(name = element_blank(),
+                      labels = c("Black",
+                                 "No Majority",
+                                 "White")) +
+  scale_y_continuous(name = "Tract population",
+                     breaks = c(1000, 3000, 5000, 7000, 9000),
+                     labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
+  theme_minimal() 
+```
+
+#### Plot #6
+Majority Race and Tract Population
+```{r }
+ggplot(mke_tracts, 
+       aes(x = maj_race,
+           y = tot_pop,
+           color = maj_race)) +
+  geom_point(position = "jitter",
+             size = 1.0,
+             alpha = 1.0) +
+  scale_x_discrete(name = "Majority Race",
+                       labels = c("White",
+                                  "Black",
+                                  "No Majority")) +
+  scale_y_continuous(name = "Tract population",
+                     trans = "log",
+                     breaks = c(1000, 3000, 5000, 7000, 9000),
+                     labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
+  theme_gray() +
+  theme(legend.position = "none")
+
+```
+
+#### Plot #7
+Majority Household Type and Number of Tracts by Majority Race
+```{r }
+ggplot(mke_tracts, 
+       aes(x = maj_hh,
+           fill = maj_race)) +
+  geom_bar() +
+  scale_y_continuous(name = "Number of Tracts") +
+  scale_x_discrete(name = "Majority Household Type",
+                       labels = c("Family",
+                                  "Non Family")) +
+  scale_fill_discrete(name = element_blank(),
+                      labels = c("Black",
+                                 "No Majority",
+                                 "White")) +
+  theme_classic()
+```
+
+#### Plot #8
+Percent of Houses Owned and Tract Population
+```{r }
+ggplot(mke_tracts, 
+       aes(x = tot_pop,
+           y = per_own)) +
+  geom_area(alpha = 0.25, color = "white", size = 0.75) +
+  scale_y_continuous(name = "Tract Population",
+                     breaks = seq(1000, 9000, by = 1000)) +
+  scale_x_continuous(name = "Percent of Houses Owned within Tract",
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
+  theme_gray()
+```
+
+#### Plot #9
+Majority Race and Median Age by Majority Household Type
+```{r }
+ggplot(mke_tracts, 
+       aes(x = maj_race,
+           y = med_age,
+           fill = maj_hh)) +
+  geom_violin(scale = "area") +
+  scale_x_discrete(name = "Majority Race",
+                       labels = c("White",
+                                  "Black",
+                                  "No Majority")) +
+  scale_y_continuous(name = "Median Age within Tract",
+                     breaks = seq(18, 58, by = 10)) +
+  
+  scale_fill_discrete(name = "Majority Household Type",
+                      labels = c("Family",
+                                 "Non Family")) +
+  theme_linedraw()
+```
+
+#### Plot #10
+Average Household Size and Median Age by Majority Race
+```{r }
+ggplot(mke_tracts,
+       aes(x = avg_hh,
+           y = med_age,
+           color = maj_race)) +
+  geom_quantile(linetype = 2, size = 1.0) +
+  scale_x_continuous(name = "Average Household Size in Tract",
+                     breaks = seq(0, 4.5, by = 0.5)) +
+  scale_y_continuous(name = "Median Age of Tract",
+                     breaks = seq(8, 68, by = 10),
+                     labels = c("8", "18", "28", "38", "48", "58", "68")) +
+  scale_color_discrete(name = "Majority Race",
+                       labels = c("White",
+                                  "Black",
+                                  "No Majority")) +
+  theme_bw()
+```
+
+#### Plot #11
+Median Age and Tract Population by Majority Race
+```{r }
+ggplot(mke_tracts,
+       aes(x = med_age,
+           y = tot_pop,
+           label = maj_race,
+           color = maj_race)) +
+  geom_text(size = 3.0) +
+  scale_x_continuous(name = "Median Age of Tract",
+                     breaks = seq(8, 68, by = 10),
+                     labels = c("8", "18", "28", "38", "48", "58", "68")) +
+  scale_y_continuous(name = "Tract population",
+                     breaks = c(1000, 3000, 5000, 7000, 9000),
+                     labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
+  scale_color_discrete(name = element_blank(),
+                       labels = c("Black",
+                                  "No Majority",
+                                  "White")) +
+  theme_linedraw()
+```
+
+#### Plot #12
+Majority Race
+```{r }
+pie_chart <- ggplot(mke_tracts, aes(x = 1, fill = maj_race)) +
+  geom_bar(position = "fill") +
+  coord_polar(theta = "y") +
+  scale_y_continuous(name = "Number of tracts") +
+  scale_fill_discrete(name = "Majority Race",
+                       labels = c("Black",
+                                  "No Majority",
+                                  "White")) +
+  theme_void() 
+
+pie_chart
+```
+
+### Save Dataset
+```{r write to csv}
+write_csv(mke_tracts, "mke_tracts.csv")
+```
+
