@@ -4,7 +4,10 @@ author: "Meghan Casey"
 date: September 14, 2020
 output: 
   html_document:
-    theme: "cosmo" 
+    theme: "cosmo"
+    toc: true
+    toc_depth: 4  
+    toc_float: true
     highlight: "tango"
 ---
 
@@ -21,7 +24,7 @@ Population: TBD
 3. Majority race of the tract (categorical): maj_race
 4. Median age of tract (continuous): med_age
 5. Majority household type of the tract (categorical): maj_hh
-6. Average Household size of the tract (continous): avg_hh
+6. Average Household size of the tract (continuous): avg_hh
 
 
 ### Load Libraries
@@ -29,6 +32,7 @@ Population: TBD
 library(ggplot2)
 library(tidycensus)
 library(tidyverse)
+library(ggthemes)
 ```
 
 ### Get Data
@@ -74,7 +78,8 @@ mke_tracts <- get_decennial(geography = "tract", variables = vars,
     pac_isl/tot_pop > 0.5 ~ "pac_isl",
     other/tot_pop > 0.5 ~ "other",
     multi/tot_pop > 0.5 ~ "multi",
-    (white + black + native + asian + asian + pac_isl + other + multi) / tot_pop < 0.5 ~ "other",
+    (white + black + native + asian + 
+       asian + pac_isl + other + multi) / tot_pop < 0.5 ~ "other",
     TRUE ~ "None")) %>%
   
   mutate(maj_hh = case_when(
@@ -101,11 +106,13 @@ ggplot(mke_tracts,
   scale_y_continuous(name = "Percent of Houses Owned within Tract",
                      breaks = seq(0, 1, by = 0.1),
                      labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
-  scale_color_discrete(name = "Majority Household Type",
-                       labels = c("Family",
-                                  "Non Family")) +
-  theme_gray()
+  scale_color_manual(values = c("sienna2", "darkslategrey"), 
+                     name = "Majority Household Type", 
+                     labels = c("Family", "Non Family")) +
+  theme_tufte()
 ```
+
+In general, majority family household tracts consist of more owned homes, with more people living within those homes. 
 
 #### Plot #2
 Average Household Size and Median Age by Majority Race
@@ -120,8 +127,9 @@ ggplot(mke_tracts,
                      breaks = seq(0, 4.5, by = 0.5)) +
   scale_y_continuous(name = "Median Age within Tract",
                      breaks = seq(18, 58, by = 10)) +
-  scale_color_discrete(name = element_blank(),
-                      labels = c("Black",
+  scale_color_manual(values = c("turquoise4", "seagreen3", "salmon3"), 
+                     name = element_blank(),
+                     labels = c("Black",
                                  "No Majority",
                                  "White")) +
   scale_fill_discrete(name = element_blank(),
@@ -131,6 +139,7 @@ ggplot(mke_tracts,
   theme_gray()
 ```
 
+The grouping of several tracts with larger households size and younger age could relate to rental populations among students or young professionals.
 
 #### Plot #3
 Percent of Houses Owned and Tract Population
@@ -139,14 +148,16 @@ ggplot(mke_tracts,
        aes(x = per_own,
            y = tot_pop)) + 
   geom_point() +
-  stat_smooth(color = "black") +
+  stat_smooth(color = "indianred2") +
   scale_x_continuous(name = "Percent of Houses Owned within Tract",
                      breaks = seq(0, 1, by = 0.1),
                      labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
   scale_y_continuous(name = "Tract Population",
                      breaks = seq(1000, 9000, by = 1000)) +
-  theme_classic()
+  theme_calc()
 ```
+
+The clustering of tract data points in the middle section might indicate that there is not a strong relationship between the percent of houses owned within a tract and that tract's population.
 
 #### Plot #4
 Median Age and Tract Population
@@ -154,8 +165,8 @@ Median Age and Tract Population
 ggplot(mke_tracts, 
        aes(x = med_age,
            y = tot_pop)) +
-  geom_point(alpha = 0.5, size = 0.5) +
-  stat_smooth(color = "black", linetype = 2, size = 0.5) +
+  geom_point(color = "grey33", alpha = 0.5, size = 0.5) +
+  stat_smooth(color = "darksalmon", size = 1) +
   scale_x_continuous(name = "Median Age of Tract",
                      breaks = seq(18, 58, by = 10),
                      labels = c("58 or 18", "28", "38", "48", "58")) +
@@ -164,15 +175,18 @@ ggplot(mke_tracts,
                      breaks = c(1000, 3000, 5000, 7000, 9000),
                      labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
   coord_polar(theta = "x") +
-  theme_bw() 
+  theme_hc()
 ```
+
+Again, not seeing a strong correlation between median age of tract and the tract population.
 
 #### Plot #5
 Majority Race and Tract Population
 ```{r }
 ggplot(mke_tracts, 
        aes(x = maj_race,
-           y = tot_pop)) +
+           y = tot_pop,
+           color = maj_race)) +
   geom_point() +
   scale_x_discrete(name = element_blank(),
                       labels = c("Black",
@@ -181,8 +195,12 @@ ggplot(mke_tracts,
   scale_y_continuous(name = "Tract population",
                      breaks = c(1000, 3000, 5000, 7000, 9000),
                      labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
-  theme_minimal() 
+  scale_color_manual(values = c("turquoise4", "seagreen3", "salmon3")) +
+  theme_minimal() +
+  theme(legend.position = "none")
 ```
+
+The distribution seems more or less even, with a few outliers in the White section.
 
 #### Plot #6
 Majority Race and Tract Population
@@ -202,10 +220,12 @@ ggplot(mke_tracts,
                      trans = "log",
                      breaks = c(1000, 3000, 5000, 7000, 9000),
                      labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
-  theme_gray() +
+  scale_color_manual(values = c("turquoise4", "seagreen3", "salmon3")) +
+  theme_foundation() +
   theme(legend.position = "none")
 
 ```
+This is a similar plot to the previous one, but also shows the range of majority percentages within each racial category.
 
 #### Plot #7
 Majority Household Type and Number of Tracts by Majority Race
@@ -218,12 +238,15 @@ ggplot(mke_tracts,
   scale_x_discrete(name = "Majority Household Type",
                        labels = c("Family",
                                   "Non Family")) +
-  scale_fill_discrete(name = element_blank(),
-                      labels = c("Black",
+  scale_fill_manual(values = c("turquoise4", "seagreen3", "salmon3"), 
+                       name = element_blank(),
+                       labels = c("Black",
                                  "No Majority",
                                  "White")) +
-  theme_classic()
+  theme_pander()
 ```
+
+This is an effective way to show the racial majorities in each household type.
 
 #### Plot #8
 Percent of Houses Owned and Tract Population
@@ -240,6 +263,8 @@ ggplot(mke_tracts,
   theme_gray()
 ```
 
+This plot doesn't do a great job of indicating a relationship between tract population and percent of houses owned, there is a lot of variety.
+
 #### Plot #9
 Majority Race and Median Age by Majority Household Type
 ```{r }
@@ -254,12 +279,15 @@ ggplot(mke_tracts,
                                   "No Majority")) +
   scale_y_continuous(name = "Median Age within Tract",
                      breaks = seq(18, 58, by = 10)) +
+
+  scale_fill_manual(values = c("sienna2", "darkslategrey"), 
+                     name = "Majority Household Type", 
+                     labels = c("Family", "Non Family")) +
   
-  scale_fill_discrete(name = "Majority Household Type",
-                      labels = c("Family",
-                                 "Non Family")) +
-  theme_linedraw()
+  theme_pander()
 ```
+
+There is a lot more variation in no majority tracts - could be interesting to see what other variables this is true for.
 
 #### Plot #10
 Average Household Size and Median Age by Majority Race
@@ -274,12 +302,15 @@ ggplot(mke_tracts,
   scale_y_continuous(name = "Median Age of Tract",
                      breaks = seq(8, 68, by = 10),
                      labels = c("8", "18", "28", "38", "48", "58", "68")) +
-  scale_color_discrete(name = "Majority Race",
-                       labels = c("White",
-                                  "Black",
-                                  "No Majority")) +
-  theme_bw()
+ scale_color_manual(values = c("turquoise4", "seagreen3", "salmon3"), 
+                     name = element_blank(),
+                     labels = c("Black",
+                                 "No Majority",
+                                 "White")) +
+  theme_stata()
 ```
+
+Like an earlier plot, the trend towards larger households for younger median ages could be indicative of student populations, curious that the white category does not follow this trend.
 
 #### Plot #11
 Median Age and Tract Population by Majority Race
@@ -289,19 +320,22 @@ ggplot(mke_tracts,
            y = tot_pop,
            label = maj_race,
            color = maj_race)) +
-  geom_text(size = 3.0) +
+  geom_text(size = 3) +
   scale_x_continuous(name = "Median Age of Tract",
                      breaks = seq(8, 68, by = 10),
                      labels = c("8", "18", "28", "38", "48", "58", "68")) +
   scale_y_continuous(name = "Tract population",
                      breaks = c(1000, 3000, 5000, 7000, 9000),
                      labels = c("1,000", "3,000", "5,000", "7,000", "9,000")) +
-  scale_color_discrete(name = element_blank(),
-                       labels = c("Black",
-                                  "No Majority",
-                                  "White")) +
-  theme_linedraw()
+  scale_color_manual(values = c("turquoise4", "seagreen3", "salmon3"), 
+                     name = element_blank(),
+                     labels = c("Black",
+                                 "No Majority",
+                                 "White")) +
+  theme_grey()
 ```
+
+An interesting take on a scatterplot!
 
 #### Plot #12
 Majority Race
@@ -310,14 +344,17 @@ pie_chart <- ggplot(mke_tracts, aes(x = 1, fill = maj_race)) +
   geom_bar(position = "fill") +
   coord_polar(theta = "y") +
   scale_y_continuous(name = "Number of tracts") +
-  scale_fill_discrete(name = "Majority Race",
-                       labels = c("Black",
-                                  "No Majority",
-                                  "White")) +
-  theme_void() 
+  scale_fill_manual(values = c("turquoise4", "seagreen3", "salmon3"), 
+                    name = element_blank(),
+                    labels = c("Black",
+                                 "No Majority",
+                                 "White")) +
+  theme_map()
 
 pie_chart
 ```
+
+Very clear way to see racial majorities across tracts.
 
 ### Save Dataset
 ```{r write to csv}
