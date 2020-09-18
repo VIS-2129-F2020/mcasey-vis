@@ -17,6 +17,8 @@ Milwaukee, WI will be the city I analyze for this assignment.
 
 Unit of Analysis: Census Tract
 
+Population: TBD
+
 1. Total Population of the tract (continuous): tot_pop
 2. Percent of households owned (continuous): per_own
 3. Majority race of the tract (categorical): maj_race

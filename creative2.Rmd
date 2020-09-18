@@ -7,7 +7,7 @@ output:
     theme: "cosmo"
     toc: true
     toc_depth: 3  
-    toc_float: true
+    toc_float: true    
     highlight: "tango"
 ---
 ### Load Libraries
@@ -19,8 +19,6 @@ library(ggplot2)
 library(ggspatial)
 library(ggthemes)
 library(tidyverse)
-library(extrafont)
-library(extrafontdb)
 library(cartogram)
 ```
 
@@ -38,19 +36,14 @@ us_map <- ggplot(us_states) +
   theme_pander()
 
 us_map
-
-us_map + theme(plot.title = element_text(family = "Tw Cen MT",
-                             size = 20),
-        axis.title = element_text(family = "Tw Cen MT"),
-        axis.text = element_text(family = "GDT" ))
 ```
 
 ### Reprojecting Maps
 #### Projections Used
-Three Projections: 1.NAD83 Massachusetts Mainland (ftUS) 2. NAD27 California Albers 3. NAD83 Wisconsin Central (ftUS)
+Three Projections: 1.NAD83 Massachusetts Mainland (ftUS) 2. Yukon Albers (NAD83) 3. NAD83 Wisconsin Central (ftUS)
 ```{r}
 MA_state_plane <- "+proj=lcc +lat_1=42.68333333333333 +lat_2=41.71666666666667 +lat_0=41 +lon_0=-71.5 +x_0=200000.0001016002 +y_0=750000 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
-CA_state_plane <- "+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +ellps=clrk66 +datum=NAD27 +units=m +no_defs"
+yukon_state_plane <- "+proj=aea +lat_1=61.66666666667 +lat_2=68 +lat_0=59 +lon_0=-132.5 +x_0=500000 +y_0=500000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 WI_state_plane <- "+proj=lcc +lat_1=45.5 +lat_2=44.25 +lat_0=43.83333333333334 +lon_0=-90 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 ```
 
@@ -63,7 +56,7 @@ ggplot(us_states) +
 ```{r}
 ggplot(us_states) +
   geom_sf() +
-  coord_sf(crs = CA_state_plane) +
+  coord_sf(crs = yukon_state_plane) +
   theme_pander()
 ```
 ```{r}
@@ -84,10 +77,10 @@ ggplot(states_transformed_ma) +
 ```
 
 ```{r}
-states_transformed_ca <- us_states %>%
-  st_transform(crs = CA_state_plane)
+states_transformed_yukon <- us_states %>%
+  st_transform(crs = yukon_state_plane)
 
-ggplot(states_transformed_ca) +
+ggplot(states_transformed_yukon) +
   geom_sf() +
   theme_pander()
 ```
@@ -115,7 +108,7 @@ covid_states_wi <- states_transformed_wi %>%
   mutate(pop = 100000 * Confirmed / Incident_Rate) %>%
   select(name, pop, Confirmed, Deaths, Recovered, Active)
 
-covid_states_ca <- states_transformed_ca %>%
+covid_states_yukon <- states_transformed_yukon %>%
   left_join(usa_data, by = c("name" = "Province_State")) %>%
   mutate(pop = 100000 * Confirmed / Incident_Rate) %>%
   select(name, pop, Confirmed, Deaths, Recovered, Active)
@@ -143,7 +136,7 @@ covid_carto_cont <- covid_states_ma %>%
 
 ggplot(covid_carto_cont, aes(fill = Confirmed)) +
   geom_sf(color = NA) +
-  scale_fill_viridis_c(
+  scale_fill_viridis_c(option = "inferno",
     name = "Number of\nconfirmed\nCOVID-19\ncases\nas of\nSeptember\n17, 2020",
     breaks = seq(100000, 700000, by = 100000),
     labels = formatC(seq(100000, 700000, by = 100000),
@@ -159,7 +152,7 @@ covid_carto_ncont <- covid_states_ma %>%
 
 ggplot(covid_carto_ncont, aes(fill = Confirmed)) +
   geom_sf(color = NA) +
-  scale_fill_viridis_c(
+  scale_fill_viridis_c(option = "cividis",
     name = "Number of\nconfirmed\nCOVID-19\ncases\nas of\nSeptember\n17, 2020",
     breaks = seq(100000, 700000, by = 100000),
     labels = formatC(seq(100000, 700000, by = 100000),
@@ -175,7 +168,7 @@ covid_carto_dorling <- covid_states_wi %>%
 
 ggplot(covid_carto_dorling, aes(fill = Confirmed)) +
   geom_sf(color = NA) +
-  scale_fill_viridis_c(
+  scale_fill_viridis_c(option = "plasma",
     name = "Number of\nconfirmed\nCOVID-19\ncases\nas of\nSeptember\n17, 2020",
     breaks = seq(100000, 700000, by = 100000),
     labels = formatC(seq(100000, 700000, by = 100000),
@@ -186,10 +179,10 @@ theme_map() +
 
 ### Proportional Symbol Map
 ```{r}
-covid_centroids <- covid_states_ca %>%
+covid_centroids <- covid_states_wi %>%
   st_centroid()
 
-ggplot(states_transformed_ca) +
+ggplot(states_transformed_wi) +
   geom_sf(color = "dimgray", fill = NA) +
   geom_sf(data = covid_centroids,
           aes(size = Confirmed),
