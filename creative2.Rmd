@@ -19,59 +19,12 @@ library(ggplot2)
 library(ggspatial)
 library(ggthemes)
 library(tidyverse)
-library(wesanderson)
-library(RColorBrewer)
+library(extrafont)
+library(extrafontdb)
 library(cartogram)
 ```
 
-### Get Data
-```{r}
-states_info <- ne_states(country = "France")
-
-```
-
-### Plain Maps
-#### World Map
-``` {r}
-world <- ne_countries(scale = 50, returnclass = "sf") 
-
-world_map <- ggplot(world) + 
-  geom_sf() +
-  theme_pander()
-
-world_map
-```
-
-#### Countries in South America
-``` {r}
-sa_countries <- world %>%
-  filter(continent == "South America")
-
-sa_map <- ggplot(sa_countries)+
-  geom_sf() +
-  theme_pander()
-
-sa_map
-```
-
-#### Provinces in France
-``` {r}
-france_provinces <- ne_states(country = "France", 
-                              returnclass = "sf") %>%
-  filter(name != "Guyane française",
-         name != "Martinique",
-         name != "Guadeloupe",
-         name != "La Réunion",
-         name != "Mayotte")
-
-france_map <- ggplot(france_provinces) +
-  geom_sf()+
-  theme_pander()
-
-france_map
-```
-
-#### US States
+#### United States Map (Equirectangular Projection)
 ``` {r}
 us_states <- ne_states(country = "United States of America",
                        returnclass = "sf") %>%
@@ -80,31 +33,27 @@ us_states <- ne_states(country = "United States of America",
 
 us_map <- ggplot(us_states) +
   geom_sf() +
+  xlab("Longitude") + ylab("Latitude") +
+  ggtitle("US Map") +
   theme_pander()
 
 us_map
+
+us_map + theme(plot.title = element_text(family = "Tw Cen MT",
+                             size = 20),
+        axis.title = element_text(family = "Tw Cen MT"),
+        axis.text = element_text(family = "GDT" ))
 ```
 
 ### Reprojecting Maps
-#### South America Map
+#### Projections Used
+Three Projections: 1.NAD83 Massachusetts Mainland (ftUS) 2. NAD27 California Albers 3. NAD83 Wisconsin Central (ftUS)
 ```{r}
-sa_map + annotation_scale()
-```
-#### US Map
-```{r}
-#US
-USA_AEA <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=clrk66 +units=m +no_defs"
-MA_state_plane <- "+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000 +ellps=GRS80 +units=m +no_defs"
-WA_state_plane <- "+proj=lcc +lat_1=47.5 +lat_2=48.73333333333333 +lat_0=47 +lon_0=-120.8333333333333 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs"
-WI_state_plane <- "+proj=lcc +lat_1=46.76666666666667 +lat_2=45.56666666666667 +lat_0=45.16666666666666 +lon_0=-90 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+MA_state_plane <- "+proj=lcc +lat_1=42.68333333333333 +lat_2=41.71666666666667 +lat_0=41 +lon_0=-71.5 +x_0=200000.0001016002 +y_0=750000 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+CA_state_plane <- "+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +ellps=clrk66 +datum=NAD27 +units=m +no_defs"
+WI_state_plane <- "+proj=lcc +lat_1=45.5 +lat_2=44.25 +lat_0=43.83333333333334 +lon_0=-90 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 ```
 
-```{r}
-ggplot(us_states) +
-  geom_sf() +
-  coord_sf(crs = USA_AEA) +
-  theme_pander()
-```
 ```{r}
 ggplot(us_states) +
   geom_sf() +
@@ -114,10 +63,9 @@ ggplot(us_states) +
 ```{r}
 ggplot(us_states) +
   geom_sf() +
-  coord_sf(crs = WA_state_plane) +
+  coord_sf(crs = CA_state_plane) +
   theme_pander()
 ```
-
 ```{r}
 ggplot(us_states) +
   geom_sf() +
@@ -127,10 +75,19 @@ ggplot(us_states) +
 
 #### US Transformed
 ```{r}
-states_transformed <- us_states %>%
-  st_transform(crs = USA_AEA)
+states_transformed_ma <- us_states %>%
+  st_transform(crs = MA_state_plane)
 
-ggplot(states_transformed) +
+ggplot(states_transformed_ma) +
+  geom_sf() +
+  theme_pander()
+```
+
+```{r}
+states_transformed_ca <- us_states %>%
+  st_transform(crs = CA_state_plane)
+
+ggplot(states_transformed_ca) +
   geom_sf() +
   theme_pander()
 ```
@@ -144,39 +101,44 @@ ggplot(states_transformed_wi) +
   theme_pander()
 ```
 
-```{r}
-states_transformed_ma <- us_states %>%
-  st_transform(crs = MA_state_plane)
-
-ggplot(states_transformed_ma) +
-  geom_sf() +
-  theme_pander()
-```
 ### Chloropleth Map
 ```{r message =FALSE}
 usa_data <- read_csv("covid_data.csv")
 
-covid_states <- states_transformed %>%
+covid_states_ma <- states_transformed_ma %>%
+  left_join(usa_data, by = c("name" = "Province_State")) %>%
+  mutate(pop = 100000 * Confirmed / Incident_Rate) %>%
+  select(name, pop, Confirmed, Deaths, Recovered, Active)
+
+covid_states_wi <- states_transformed_wi %>%
+  left_join(usa_data, by = c("name" = "Province_State")) %>%
+  mutate(pop = 100000 * Confirmed / Incident_Rate) %>%
+  select(name, pop, Confirmed, Deaths, Recovered, Active)
+
+covid_states_ca <- states_transformed_ca %>%
   left_join(usa_data, by = c("name" = "Province_State")) %>%
   mutate(pop = 100000 * Confirmed / Incident_Rate) %>%
   select(name, pop, Confirmed, Deaths, Recovered, Active)
 ```
 
 ``` {r}
-ggplot(covid_states, aes(fill = Confirmed)) +
+ma_covid <- ggplot(covid_states_ma, aes(fill = Confirmed)) +
   geom_sf(color = NA) +
+  xlab("Longitude") + ylab("Latitude") +
   scale_fill_viridis_c(
     name = "Number of\nconfirmed\nCOVID-19\ncases\nas of\nSeptember\n17, 2020",
     breaks = seq(100000, 700000, by = 100000),
     labels = formatC(seq(100000, 700000, by = 100000),
                      big.mark = ",", format = "f", digits = 0)) +
   theme_map() +
-  theme(legend.background = element_blank())
+  theme(legend.background = element_blank(), legend.position = "left")
 
+ma_covid
 ```
+
 ### Continuous Cartogram
 ```{r message= FALSE}
-covid_carto_cont <- covid_states %>%
+covid_carto_cont <- covid_states_ma %>%
   cartogram_cont("pop")
 
 ggplot(covid_carto_cont, aes(fill = Confirmed)) +
@@ -187,12 +149,12 @@ ggplot(covid_carto_cont, aes(fill = Confirmed)) +
     labels = formatC(seq(100000, 700000, by = 100000),
                     big.mark = ",", format = "f", digits = 0)) +
 theme_map() +
-  theme(legend.background = element_blank())
+  theme(legend.background = element_blank(), legend.position = "left")
 ```
 
 ### Non-Continuous Cartogram
 ```{r}
-covid_carto_ncont <- covid_states %>%
+covid_carto_ncont <- covid_states_ma %>%
   cartogram_ncont("pop")
 
 ggplot(covid_carto_ncont, aes(fill = Confirmed)) +
@@ -203,12 +165,12 @@ ggplot(covid_carto_ncont, aes(fill = Confirmed)) +
     labels = formatC(seq(100000, 700000, by = 100000),
                     big.mark = ",", format = "f", digits = 0)) +
 theme_map() +
-  theme(legend.background = element_blank()) 
+  theme(legend.background = element_blank(), legend.position = "left") 
 ```
 
 ### Dorling Cartogram
 ```{r}
-covid_carto_dorling <- covid_states %>%
+covid_carto_dorling <- covid_states_wi %>%
   cartogram_dorling("pop")
 
 ggplot(covid_carto_dorling, aes(fill = Confirmed)) +
@@ -219,14 +181,15 @@ ggplot(covid_carto_dorling, aes(fill = Confirmed)) +
     labels = formatC(seq(100000, 700000, by = 100000),
                     big.mark = ",", format = "f", digits = 0)) +
 theme_map() +
-  theme(legend.background = element_blank())
+  theme(legend.background = element_blank(), legend.position = "left")
 ```
+
 ### Proportional Symbol Map
 ```{r}
-covid_centroids <- covid_states %>%
+covid_centroids <- covid_states_ca %>%
   st_centroid()
 
-ggplot(states_transformed_wi) +
+ggplot(states_transformed_ca) +
   geom_sf(color = "dimgray", fill = NA) +
   geom_sf(data = covid_centroids,
           aes(size = Confirmed),
