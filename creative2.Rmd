@@ -29,13 +29,12 @@ us_states <- ne_states(country = "United States of America",
   filter(name != "Alaska",
          name != "Hawaii")
 
-us_map <- ggplot(us_states) +
+ggplot(us_states) +
   geom_sf() +
   xlab("Longitude") + ylab("Latitude") +
   ggtitle("US Map") +
   theme_pander()
 
-us_map
 ```
 
 ### Reprojecting Maps
