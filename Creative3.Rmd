@@ -22,6 +22,11 @@ library(nngeo)
 
 ### Load Data
 ##### I'm using data from Analyze Boston.
+1. Boston Wards (polygon): wards
+2. Public Libraries (point): lib
+3. Main Street District (polygon): planning
+4. Colleges + Universities (points): school
+
 ```{r}
 wards <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/398ee443f4ac49e9a0b7facf80afc20f_8.kml?outSR={%22latestWkid%22:2249,%22wkid%22:102686}", quiet = TRUE)
 
@@ -61,6 +66,7 @@ ggplot(wards) +
   theme_pander()+
   annotation_scale()
 ```
+
 ### 1. Number and Proportion of Schools within a quarter mile of Public Libraries:
 ```{r}
 lib_buffer <- st_buffer(lib, dist = 400) %>%
@@ -152,6 +158,7 @@ ggplot(wards) +
   theme(legend.position = "left")
 
 ```
+
 ### 3. Number and Proportion of Public Libraries within Boston Wards:
 ```{r}
 wards <- wards %>%
