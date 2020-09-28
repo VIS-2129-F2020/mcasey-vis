@@ -22,6 +22,7 @@ library(nngeo)
 
 ### Load Data
 ##### I'm using data from Analyze Boston.
+
 1. Boston Wards (polygon): wards
 2. Public Libraries (point): lib
 3. Main Street District (polygon): planning
