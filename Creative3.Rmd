@@ -15,8 +15,8 @@ output:
 library(sf)
 library(tidyverse)
 library(ggthemes)
-library(ggspatial)
 library(units)
+library(ggspatial)
 library(nngeo)
 ```
 
