@@ -35,7 +35,7 @@ lib <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/cb00f9
 
 planning <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/440c7ec0178d4c8593aecef7ea96bb4d_0.kml", quiet = TRUE)
 
-school <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/cbf14bb032ef4bd38e20429f71acb61a_2.kml?outSR={%22latestWkid%22:2249,%22wkid%22:102686}", quiet = TRUE)
+school <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/cbf14bb032ef4bd38e20429f71acb61a_2.kml?outSR={%22latestWkid%22:2249,%22wkid%22:102686%}", quiet = TRUE)
 ```
 
 ### Transforming Data
