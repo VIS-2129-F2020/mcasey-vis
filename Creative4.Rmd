@@ -22,6 +22,7 @@ library(data.table)
 library(png)
 library(grid)
 library(ggimage)
+library(ggrepel)
 ```
 
 ### Load Data
@@ -34,7 +35,7 @@ dogs <- read.csv("Dogs_of_Cambridge.csv")
 ```
 
 ```{r}
-dogs1 <- st_as_sf(dogs, coords = c("long", "lat"), crs = WGS)
+dogs1 <- st_as_sf(x = dogs, coords = c("long", "lat"), crs = WGS)
 ```
 
 ### Get Street Data
@@ -115,7 +116,7 @@ ggplot(iso_all_modes) +
   geom_sf(aes(fill = mode), color = "NA", alpha = 0.5) +
   coord_sf(xlim = c(left_side, right_side), 
            ylim = c(bottom_side, top_side), expand = FALSE) +
-  scale_fill_manual(values = c("gold1", "orange2", "tomato4"),
+  scale_fill_manual(values = c("cornsilk", "tan2", "tomato4"),
                      name = "Corgis that are reachable\nwithin 5 minutes",
                        labels = c("By car", "By Bike", "By foot")) +
   theme_map() +
@@ -124,11 +125,6 @@ ggplot(iso_all_modes) +
 
 ```
 ```{r}
-otp_stop()
-```
-
-```{r}
-
 iso_areas <- iso_all_modes %>%
   mutate(area = st_area(iso_all_modes)) %>%
   st_set_geometry(NULL) %>%
@@ -145,26 +141,57 @@ ggplot(iso_areas,
             "Area within a five-minute biking distance of a corgi\n(square km)",
             breaks = breaks <- seq(0, 700000, by = 100000),
             labels = breaks / 1000000) +
-  theme_bw()
-```
-### Buffer
-```{r}
-address <- st_read("168 Western Avenue, Cambridge, MA.kml")
+  theme_pander()
 ```
 ```{r}
-    
-ggplot(iso_5min_bike) +
+iso_10min_walk <- 
+  otp_isochrone(otpcon = otpcon, fromPlace = dogs1, 
+                mode = "WALK", cutoffSec = 600) %>%
+  st_transform(crs = WGS) %>%
+  mutate(mode = "walk")
+```
+
+```{r}
+total_area_walk<- st_as_sf(st_union(iso_10min_walk$geometry))
+```
+
+```{r}
+ggplot(total_area_walk) +
   annotation_map_tile(type = "cartolight", zoomin = 0, progress = "none") +
-  geom_sf(aes(fill = mode), color = "NA", alpha = 0.5) +
-  geom_sf(data = address, color = "black", size = 5, pch = 4,) +
-  geom_sf(data = dogs1, size = 2, color = "gray30") +
-  scale_fill_manual(values = c("salmon1"),
-                     name = "Corgis that are reachable\nwithin 5 minutes",
-                       labels = c("By bike")) +
-
+  geom_sf(fill = "khaki2", color = "NA", alpha = 0.25) +
+  geom_sf(data = dogs1, size = 2, color = "tan3") +
+  annotate(geom = "text", x = left_side + .045, 
+           y = top_side, 
+           label = paste("Overlapping Corgi 10 minute Walksheds"), 
+           hjust = 0, vjust = 0, size = 3) +
   theme_map() +
-  theme(legend.background = element_blank(), legend.position = "left") +
-  labs(caption = "Basemap Copyright OpenStreetMap contributors")
-
+  labs(caption = "Basemap Copyright OpenStreetMap contributors") 
 ```
 
+
+```{r}
+map_names <- ggplot() +
+  annotation_map_tile(type = "cartolight", zoomin = 0, progress = "none") +
+  geom_sf(dogs1, mapping = aes(color = Dog_Name)) +
+  scale_color_manual(values = c("turquoise4", "seagreen3", "salmon3", "yellow", "darkorange1", "turquoise", "violet", "royalblue", "steelblue2", "tan", "darkorchid", "chartreuse", "springgreen", "cyan", "firebrick", "lightgoldenrod", "darkseagreen", "plum", "hotpink", "deeppink", "lightblue", "tomato", "cadetblue", "black", "thistle"), 
+                    name = element_blank(),
+                    labels = c("Andy", "Annie", "Baci", "Bruce", "Cassie", "Frida", "Hazel", "Izzy", "Katie", "Kuma", "Lewi", "Lola", "Louie", "Marvel", "Mia", "Otis", "Rue", "Rupert", "Scout", "Teddy", "Tennessee", "Tomato", "Trixie", "Wilson", "Yo-Yo")) +
+  theme_pander()
+
+map_names
+```
+
+```{r}
+map_text <- ggplot(dogs, mapping = aes(x= long, y= lat, label=Dog_Name))+
+geom_point() +
+theme_map()
+map_text
+```
+```{r}
+map_text + geom_label_repel(aes(label = Dog_Name),
+                            box.padding   = 0.35, 
+                  point.padding = 0.5,
+                  segment.color = 'grey50') +
+   annotation_map_tile(type = "cartolight", zoomin = 0, progress = "none") +
+  theme_classic()
+```
