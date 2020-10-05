@@ -28,14 +28,16 @@ library(nngeo)
 3. Main Street District (polygon): planning
 4. Colleges + Universities (points): school
 
+The Colleges and Universities dataset was downloaded from [http://bostonopendata-boston.opendata.arcgis.com/datasets/cbf14bb032ef4bd38e20429f71acb61a_2.kml}](http://bostonopendata-boston.opendata.arcgis.com/datasets/cbf14bb032ef4bd38e20429f71acb61a_2.kml}){target="_blank"}
+
 ```{r}
-wards <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/398ee443f4ac49e9a0b7facf80afc20f_8.kml?outSR={%22latestWkid%22:2249,%22wkid%22:102686}", quiet = TRUE)
+wards <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/398ee443f4ac49e9a0b7facf80afc20f_8.kml", quiet = TRUE)
 
-lib <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/cb00f9248aa6404ab741071ca3806c0e_6.kml?outSR={%22latestWkid%22:2249,%22wkid%22:102686}", quiet = TRUE)
+lib <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/cb00f9248aa6404ab741071ca3806c0e_6.kml", quiet = TRUE)
 
-planning <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/440c7ec0178d4c8593aecef7ea96bb4d_0.kml?outSR=%7B%22latestWkid%22%3A2249%2C%22wkid%22%3A102686%7D", quiet = TRUE)
+planning <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/440c7ec0178d4c8593aecef7ea96bb4d_0.kml", quiet = TRUE)
 
-school <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/cbf14bb032ef4bd38e20429f71acb61a_2.kml?outSR={%22latestWkid%22:2249,%22wkid%22:102686}", quiet = TRUE)
+school <- st_read("Colleges_and_Universities.kml", quiet = TRUE)
 ```
 
 ### Transforming Data
