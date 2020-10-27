@@ -42,11 +42,11 @@ districts$label <- paste(districts$HIST_NAME) %>%
 landmarks_map <- leaflet(landmarks) %>%
   addProviderTiles(providers$Stamen) %>%
   addPolygons(data = districts, fillColor = "navy", stroke = FALSE,
-              highlightOptions = highlightOptions(fillColor = "darkgray",
+              highlightOptions = highlightOptions(fillColor = "darkblue",
                                                   fillOpacity = 1),
               label = ~label) %>%
   addPolygons(fillColor = "orange", stroke = FALSE,
-              highlightOptions = highlightOptions(fillColor = "darkgray", 
+              highlightOptions = highlightOptions(fillColor = "darkorange", 
                                                   fillOpacity = 1),
               label = ~label,
               popup = ~popup) %>%
@@ -59,5 +59,8 @@ landmarks_map <- leaflet(landmarks) %>%
                 lat2 = 42.24,
                 lng2 = -70.94)
 landmarks_map
+```
+```{r}
+saveWidget(landmarks_map, file = "landmarks.html")
 ```
               
