@@ -1,0 +1,63 @@
+---
+title: "Creative 6: Interactive Maps"
+author: "Meghan Casey"
+date: October 28, 2020
+output: 
+  html_document:
+    theme: "cosmo"
+    toc: true
+    toc_depth: 3  
+    toc_float: true    
+    highlight: "tango"
+---
+### Load Libraries
+```{r message=FALSE}
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(htmltools)
+library(htmlwidgets)
+```
+
+### Read in Data
+```{r}
+landmarks <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/7a7aca614ad740e99b060e0ee787a228_3.geojson") %>%
+
+  mutate(date = case_when(
+    Date_Desig == " "~"No Date")) %>%
+  
+  mutate(date1 = ifelse(is.na(Date_Desig), "No Date", Date_Desig))
+  
+districts <- st_read("http://bostonopendata-boston.opendata.arcgis.com/datasets/547a3ccb7ab443ceaaba62eef6694e74_4.geojson")
+```
+
+```{r}
+landmarks$label <- paste(landmarks$Name_of_Pr)
+landmarks$popup <- paste("Neighborhood:", landmarks$Neighborho, "<br>", "Date Designated:", landmarks$Date_Desig) %>%
+  lapply(htmltools::HTML)
+
+districts$label <- paste(districts$HIST_NAME) %>%
+  lapply(htmltools::HTML)
+
+landmarks_map <- leaflet(landmarks) %>%
+  addProviderTiles(providers$Stamen) %>%
+  addPolygons(data = districts, fillColor = "navy", stroke = FALSE,
+              highlightOptions = highlightOptions(fillColor = "darkgray",
+                                                  fillOpacity = 1),
+              label = ~label) %>%
+  addPolygons(fillColor = "orange", stroke = FALSE,
+              highlightOptions = highlightOptions(fillColor = "darkgray", 
+                                                  fillOpacity = 1),
+              label = ~label,
+              popup = ~popup) %>%
+  addControl("Boston Landmark Commission Landmarks", position = "topright") %>%
+  addControl('<a href="https://data.boston.gov/dataset/boston-landmarks-commission-blc-landmarks">Data Source</a>',
+             position = "bottomleft") %>%
+  
+  setMaxBounds( lng1 = -71.25,
+                lat1 = 42.40,
+                lat2 = 42.24,
+                lng2 = -70.94)
+landmarks_map
+```
+              
